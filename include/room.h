@@ -5,6 +5,7 @@
 
 #include "direction.h"
 #include "item.h"
+#include "monster.h"
 
 /// @file room.h
 /// @brief A place in the Dungeon.
@@ -22,6 +23,19 @@ public:
   /// @param name short name shown to the player
   /// @param description one or two sentences shown by `look`
   Room(std::string name, std::string description);
+
+  /// Delete the monster owned by this room.
+  ~Room();
+
+  Room(const Room &) = delete;
+  Room &operator=(const Room &) = delete;
+
+  /// Replace the room's monster, taking ownership.
+  /// @param monster the new monster, or nullptr
+  void set_monster(Monster *monster);
+
+  /// @return the monster in this room, or nullptr
+  Monster *monster() const;
 
   /// @return the room's name
   const std::string &name() const;
@@ -70,6 +84,7 @@ private:
   Item m_items[max_room_items];
   int m_item_count;
   int m_trap_damage;
+  Monster *m_monster;
 };
 
 #endif // ARCADE_ROOM_H
