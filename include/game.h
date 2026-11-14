@@ -9,6 +9,7 @@
 /// A game with a title and the score from its most recent play.
 class Game {
 public:
+  virtual ~Game() = default;
   /// @param title the name shown to the player
   explicit Game(std::string title);
 
@@ -18,8 +19,8 @@ public:
   /// @return the score from the most recent play, or 0 if never played
   int last_score() const;
 
-  /// Placeholder. Derived classes define their own play() this week.
-  void play();
+  /// Run this game's implementation.
+  virtual void play() = 0;
 
 protected:
   /// Record the score of a finished game.
