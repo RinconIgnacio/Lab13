@@ -6,6 +6,8 @@
 #include "input.h"
 #include "item.h"
 #include "monster.h"
+#include "goblin.h"
+#include "troll.h"
 #include "player.h"
 
 void connect_rooms(Room &a, Direction d, Room &b) {
@@ -70,25 +72,69 @@ constexpr int monster_bonus = 25;
 ///
 /// Use only the Monster interface. There must be no `if` on the kind of
 /// monster.
-[[maybe_unused]] FightResult fight(Player &player, Monster &monster) {
-  // TODO (Lab 13, Task 4)
-  (void)player;
-  (void)monster;
-  return FightResult::fled;
+FightResult fight(Player &player, Monster &monster) {
+    std::string choice;
+
+    while (!monster.is_dead() && player.is_alive()) {
+        std::cout << monster.describe() << "\\n";
+        std::cout << "Health: " << player.health() << "\\n";
+
+        if (!prompt_line("Attack (a) or flee (f): ", choice)) {
+            return FightResult::fled;
+        }
+
+        if (choice == "f") {
+            return FightResult::fled;
+        }
+
+        if (choice != "a") {
+            std::cout << "Choose a or f.\\n";
+            continue;
+        }
+
+        monster.take_damage(player_attack);
+        std::cout << "You deal " << player_attack << " damage.\\n";
+
+        if (monster.is_dead()) {
+            std::cout << "You defeated the "
+                      << monster.name() << "!\\n";
+            return FightResult::won;
+        }
+
+        int damage = monster.attack_damage();
+        player.take_damage(damage);
+
+        std::cout << monster.name() << " deals "
+                  << damage << " damage.\\n";
+    }
+
+    return FightResult::died;
 }
 
-/// Fight the monster in the room the player just entered, if there is a live
-/// one. If the player flees, walk back through the exit they came in by:
-/// player.move(opposite(came_by)).
-/// @param defeated incremented when the player wins a fight
+/// Handle the monster in the room the player entered.
+/// @param came_by direction used to enter the room
+/// @param defeated number of monsters defeated
 /// @return false if the player died
-[[maybe_unused]] bool meet_monster(Player &player, Direction came_by,
-                                   int &defeated) {
-  // TODO (Lab 13, Task 4): needs Room::monster() from Task 3.
-  (void)player;
-  (void)came_by;
-  (void)defeated;
-  return true;
+bool meet_monster(Player &player, Direction came_by, int &defeated) {
+    Monster *monster = player.location()->monster();
+
+    if (monster == nullptr || monster->is_dead()) {
+        return true;
+    }
+
+    FightResult result = fight(player, *monster);
+
+    if (result == FightResult::won) {
+        ++defeated;
+    } else if (result == FightResult::fled) {
+        player.move(opposite(came_by));
+        std::cout << "You flee to the previous room.\\n";
+    } else {
+        std::cout << "You have died.\\n";
+        return false;
+    }
+
+    return true;
 }
 
 } // namespace
@@ -117,8 +163,8 @@ int play_dungeon() {
   connect_rooms(rooms[1], Direction::south, rooms[4]);
   connect_rooms(rooms[2], Direction::south, rooms[5]);
   rooms[4].set_trap_damage(40);
-  // TODO (Lab 13, Task 4): rooms[3].set_monster(new Goblin{});
-  //                         rooms[5].set_monster(new Troll{});
+  rooms[3].set_monster(new Goblin{});
+  rooms[5].set_monster(new Troll{});
 
   rooms[0].add_item(Item{"lantern", "A brass lantern with oil left in it.", 2});
   rooms[1].add_item(Item{"sword", "A heavy iron sword.", 5});
@@ -128,6 +174,7 @@ int play_dungeon() {
   rooms[5].add_item(Item{"crown", "A small golden crown.", 4});
 
   Player player{"Adventurer", &rooms[0]};
+  int defeated = 0;
 
   std::cout << "\n--- Dungeon ---\n";
   print_help();
@@ -143,7 +190,8 @@ int play_dungeon() {
 
     if (verb == "quit") {
       std::cout << "You leave the dungeon.\n";
-      return dungeon_score(player.inventory_count(), player.health());
+      return dungeon_score(player.inventory_count(), player.health())
+             + monster_bonus * defeated;
     } else if (verb == "help") {
       print_help();
     } else if (verb == "look") {
@@ -160,10 +208,9 @@ int play_dungeon() {
         std::cout << "You can't go " << direction_name(d) << " from here.\n";
       } else if (!enter_room(player)) {
         return 0;
+      } else if (!meet_monster(player, d, defeated)) {
+        return 0;
       }
-      // TODO (Lab 13, Task 4): after entering, call meet_monster() and
-      // return 0 if the player died. Add monster_bonus * defeated to the
-      // score you return.
     } else if (verb == "take") {
       if (noun.empty()) {
         std::cout << "Take what?\n";
@@ -184,5 +231,6 @@ int play_dungeon() {
       std::cout << "Unknown command '" << verb << "'. Type help.\n";
     }
   }
-  return dungeon_score(player.inventory_count(), player.health());
+  return dungeon_score(player.inventory_count(), player.health())
+             + monster_bonus * defeated;
 }
