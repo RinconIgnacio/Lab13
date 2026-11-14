@@ -76,8 +76,8 @@ FightResult fight(Player &player, Monster &monster) {
     std::string choice;
 
     while (!monster.is_dead() && player.is_alive()) {
-        std::cout << monster.describe() << "\\n";
-        std::cout << "Health: " << player.health() << "\\n";
+        std::cout << monster.describe() << "\n";
+        std::cout << "Health: " << player.health() << "\n";
 
         if (!prompt_line("Attack (a) or flee (f): ", choice)) {
             return FightResult::fled;
@@ -88,16 +88,16 @@ FightResult fight(Player &player, Monster &monster) {
         }
 
         if (choice != "a") {
-            std::cout << "Choose a or f.\\n";
+            std::cout << "Choose a or f.\n";
             continue;
         }
 
         monster.take_damage(player_attack);
-        std::cout << "You deal " << player_attack << " damage.\\n";
+        std::cout << "You deal " << player_attack << " damage.\n";
 
         if (monster.is_dead()) {
             std::cout << "You defeated the "
-                      << monster.name() << "!\\n";
+                      << monster.name() << "!\n";
             return FightResult::won;
         }
 
@@ -105,7 +105,7 @@ FightResult fight(Player &player, Monster &monster) {
         player.take_damage(damage);
 
         std::cout << monster.name() << " deals "
-                  << damage << " damage.\\n";
+                  << damage << " damage.\n";
     }
 
     return FightResult::died;
@@ -128,9 +128,9 @@ bool meet_monster(Player &player, Direction came_by, int &defeated) {
         ++defeated;
     } else if (result == FightResult::fled) {
         player.move(opposite(came_by));
-        std::cout << "You flee to the previous room.\\n";
+        std::cout << "You flee to the previous room.\n";
     } else {
-        std::cout << "You have died.\\n";
+        std::cout << "You have died.\n";
         return false;
     }
 
